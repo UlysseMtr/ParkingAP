@@ -39,13 +39,23 @@
                 <div class="hidden sm:ml-6 sm:flex sm:items-center">
                     <div class="relative ml-3">
                         <div class="flex items-center">
-                            <span class="text-gray-700 mr-4">{{ auth()->user()->name }}</span>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                    Déconnexion
+                            <div class="relative">
+                                <button type="button" onclick="document.getElementById('profileDropdown').classList.toggle('hidden')" class="flex items-center gap-x-1 text-gray-700 hover:text-gray-900">
+                                    <span class="text-gray-900">{{ auth()->user()->name }}</span>
+                                    <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
                                 </button>
-                            </form>
+                                <div id="profileDropdown" class="hidden absolute right-0 z-10 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                                    <a href="{{ route('profile.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mon profil</a>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            Déconnexion
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -56,7 +66,7 @@
 
     <main class="min-h-screen">
         @if(session('status'))
-        <div class="bg-green-50 border-l-4 border-green-400 p-4 fixed top-4 right-4 z-50">
+        <div id="status-message" class="bg-green-50 border-l-4 border-green-400 p-4 fixed top-4 right-4 z-50">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -68,10 +78,22 @@
                 </div>
             </div>
         </div>
+        <script>
+            setTimeout(function() {
+                var element = document.getElementById('status-message');
+                if (element) {
+                    element.style.transition = 'opacity 0.5s ease-in-out';
+                    element.style.opacity = '0';
+                    setTimeout(function() {
+                        element.remove();
+                    }, 500);
+                }
+            }, 3000);
+        </script>
         @endif
 
         @if(session('error'))
-        <div class="bg-red-50 border-l-4 border-red-400 p-4 fixed top-4 right-4 z-50">
+        <div id="error-message" class="bg-red-50 border-l-4 border-red-400 p-4 fixed top-4 right-4 z-50">
             <div class="flex">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -83,6 +105,18 @@
                 </div>
             </div>
         </div>
+        <script>
+            setTimeout(function() {
+                var element = document.getElementById('error-message');
+                if (element) {
+                    element.style.transition = 'opacity 0.5s ease-in-out';
+                    element.style.opacity = '0';
+                    setTimeout(function() {
+                        element.remove();
+                    }, 500);
+                }
+            }, 3000);
+        </script>
         @endif
 
         @yield('content')

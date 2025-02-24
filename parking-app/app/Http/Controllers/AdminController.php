@@ -45,6 +45,8 @@ class AdminController extends Controller
 
     public function createUser(Request $request)
     {
+        \Log::info('Tentative de création d\'utilisateur', $request->all());
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -52,15 +54,26 @@ class AdminController extends Controller
             'role' => ['required', 'in:user,admin'],
         ]);
 
-        User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
-            'is_active' => true,
-        ]);
+        \Log::info('Données validées', $validated);
 
-        return back()->with('status', 'Utilisateur créé avec succès.');
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+                'is_active' => true,
+            ]);
+
+            \Log::info('Utilisateur créé avec succès', ['user_id' => $user->id]);
+            return back()->with('status', 'Utilisateur créé avec succès.');
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la création de l\'utilisateur', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Erreur lors de la création de l\'utilisateur.');
+        }
     }
 
     public function updateUser(Request $request, User $user)

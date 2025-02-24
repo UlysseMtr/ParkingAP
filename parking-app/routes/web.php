@@ -25,6 +25,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Routes protégées par auth
 Route::middleware('auth')->group(function () {
     // Gestion du profil
+    Route::get('/profile', function () {
+        return view('profile.index');
+    })->name('profile.index');
     Route::post('/password/update', [AuthController::class, 'updatePassword'])->name('password.update');
 
     // Gestion des places de parking
