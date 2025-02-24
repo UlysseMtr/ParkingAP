@@ -4,26 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\ParkingSpot;
 use App\Models\Reservation;
+use App\Models\User;
 use App\Models\WaitingList;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class ReservationController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
+    use AuthorizesRequests, ValidatesRequests;
 
-    public function index()
+    /**
+     * Affiche la liste des réservations de l'utilisateur.
+     *
+     * @return View
+     */
+    public function index(): View
     {
-        $reservations = Auth::user()->reservations()->latest()->paginate(10);
+        /** @var User $user */
+        $user = Auth::user();
+        $reservations = $user->reservations()->latest()->paginate(10);
         return view('reservations.index', compact('reservations'));
     }
 
-    public function store(Request $request)
+    /**
+     * Crée une nouvelle réservation.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function store(Request $request): RedirectResponse
     {
+        /** @var User $user */
         $user = Auth::user();
 
         if ($user->hasActiveReservation()) {
@@ -34,38 +50,41 @@ class ReservationController extends Controller
             return back()->with('error', 'Vous êtes déjà dans la liste d\'attente.');
         }
 
-        // Trouver une place disponible au hasard
-        $availableSpot = ParkingSpot::whereDoesntHave('reservations', function ($query) {
-            $query->where('status', 'active');
-        })->where('is_active', true)->inRandomOrder()->first();
+        $validated = $request->validate([
+            'parking_spot_id' => ['required', 'exists:parking_spots,id'],
+            'duration' => ['required', 'integer', 'in:24,48,72'],
+        ]);
 
-        if (!$availableSpot) {
-            // Ajouter à la liste d'attente
-            WaitingList::create([
-                'user_id' => $user->id,
-                'position' => WaitingList::getNextPosition(),
-                'requested_at' => now(),
-                'status' => 'waiting'
-            ]);
+        $parkingSpot = ParkingSpot::find($validated['parking_spot_id']);
 
-            return back()->with('status', 'Aucune place disponible. Vous avez été ajouté à la liste d\'attente.');
+        if (!$parkingSpot->isAvailable()) {
+            return back()->with('error', 'Cette place n\'est plus disponible.');
         }
 
         // Créer la réservation
         $reservation = Reservation::create([
             'user_id' => $user->id,
-            'parking_spot_id' => $availableSpot->id,
+            'parking_spot_id' => $parkingSpot->id,
             'starts_at' => now(),
-            'ends_at' => now()->addHours(24), // Durée par défaut de 24h
+            'ends_at' => now()->addHours((int) $validated['duration']),
             'status' => 'active'
         ]);
 
-        return back()->with('status', 'Place de parking n°' . $availableSpot->number . ' réservée avec succès.');
+        return back()->with('status', 'Place de parking n°' . $parkingSpot->number . ' réservée avec succès pour ' . $validated['duration'] . ' heures.');
     }
 
-    public function close(Reservation $reservation)
+    /**
+     * Termine une réservation.
+     *
+     * @param Reservation $reservation
+     * @return RedirectResponse
+     */
+    public function close(Reservation $reservation): RedirectResponse
     {
-        if ($reservation->user_id !== Auth::id() && !Auth::user()->isAdmin()) {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($reservation->user_id !== $user->id && !$user->isAdmin()) {
             abort(403);
         }
 

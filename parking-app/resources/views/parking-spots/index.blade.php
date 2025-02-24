@@ -30,7 +30,6 @@
                     <div class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
                         <div class="min-w-0 flex-1">
                             <div class="focus:outline-none">
-                                <span class="absolute inset-0" aria-hidden="true"></span>
                                 <p class="text-sm font-medium text-gray-900">Place n°{{ $spot->number }}</p>
                                 <p class="truncate text-sm text-gray-500">{{ $spot->description }}</p>
                                 @if($spot->currentReservation)
@@ -43,12 +42,9 @@
                             </div>
                         </div>
                         @if(!$spot->currentReservation && !auth()->user()->hasActiveReservation() && !auth()->user()->isInWaitingList())
-                        <form method="POST" action="{{ route('reservations.store') }}">
-                            @csrf
-                            <button type="submit" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                Réserver
-                            </button>
-                        </form>
+                        <button type="button" onclick="openReservationModal('{{ $spot->id }}', '{{ $spot->number }}')" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            Réserver
+                        </button>
                         @endif
                     </div>
                     @endforeach
@@ -92,4 +88,54 @@
         </form>
     </div>
 </div>
+
+<!-- Modal de réservation -->
+<div id="reservationModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Réserver une place</h3>
+            <button type="button" onclick="closeReservationModal()" class="text-gray-400 hover:text-gray-500">
+                <span class="sr-only">Fermer</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form method="POST" action="{{ route('reservations.store') }}" id="reservationForm">
+            @csrf
+            <input type="hidden" name="parking_spot_id" id="parking_spot_id">
+            <div class="mb-4">
+                <p class="text-sm text-gray-700">Vous allez réserver la place n°<span id="spot_number"></span></p>
+            </div>
+            <div class="mb-4">
+                <label for="duration" class="block text-sm font-medium text-gray-700">Durée de réservation</label>
+                <select name="duration" id="duration" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                    <option value="24">24 heures</option>
+                    <option value="48">48 heures</option>
+                    <option value="72">72 heures</option>
+                </select>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closeReservationModal()" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    Annuler
+                </button>
+                <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Confirmer la réservation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReservationModal(spotId, spotNumber) {
+        document.getElementById('parking_spot_id').value = spotId;
+        document.getElementById('spot_number').textContent = spotNumber;
+        document.getElementById('reservationModal').classList.remove('hidden');
+    }
+
+    function closeReservationModal() {
+        document.getElementById('reservationModal').classList.add('hidden');
+    }
+</script>
 @endsection
