@@ -21,9 +21,7 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                if ($request->is('login') || $request->is('/')) {
-                    return redirect()->route('parking-spots.index');
-                }
+                return redirect()->route('parking-spots.index');
             }
         }
 

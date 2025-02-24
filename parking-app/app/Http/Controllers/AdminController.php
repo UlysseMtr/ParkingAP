@@ -10,13 +10,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class AdminController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth', 'admin']);
-    }
+    use AuthorizesRequests, ValidatesRequests;
 
     public function dashboard()
     {
@@ -58,6 +57,7 @@ class AdminController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'is_active' => true,
         ]);
 
         return back()->with('status', 'Utilisateur créé avec succès.');
