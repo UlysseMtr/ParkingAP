@@ -75,4 +75,14 @@ class User extends Authenticatable
     {
         return $this->waitingList()->where('status', 'waiting')->exists();
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function unreadNotificationsCount()
+    {
+        return $this->notifications()->whereNull('read_at')->count();
+    }
 }

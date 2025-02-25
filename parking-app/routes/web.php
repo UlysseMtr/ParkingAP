@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ParkingSpotController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\WaitingListController;
+use App\Http\Controllers\NotificationController;
 
 // Routes publiques
 Route::get('/', function () {
@@ -40,7 +41,13 @@ Route::middleware('auth')->group(function () {
 
     // Gestion de la liste d'attente
     Route::get('/waiting-list', [WaitingListController::class, 'index'])->name('waiting-list.index');
+    Route::post('/waiting-list/join', [WaitingListController::class, 'join'])->name('waiting-list.join');
     Route::post('/waiting-list/cancel', [WaitingListController::class, 'cancel'])->name('waiting-list.cancel');
+
+    // Gestion des notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 
     // Routes d'administration
     Route::prefix('admin')->name('admin.')->middleware(\App\Http\Middleware\Admin::class)->group(function () {

@@ -6,6 +6,7 @@ use App\Models\ParkingSpot;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Models\WaitingList;
+use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -90,22 +91,58 @@ class ReservationController extends Controller
 
         $reservation->close();
 
-        // Vérifier la liste d'attente
+        // Vérifier la liste d'attente pour cette place spécifique
         $nextInLine = WaitingList::where('status', 'waiting')
+            ->where('parking_spot_id', $reservation->parking_spot_id)
             ->orderBy('position')
             ->first();
 
+        // Si personne n'attend cette place spécifique, chercher la première personne en attente
+        if (!$nextInLine) {
+            $nextInLine = WaitingList::where('status', 'waiting')
+                ->orderBy('position')
+                ->first();
+        }
+
         if ($nextInLine) {
+            // Créer une notification pour l'utilisateur qui obtient la place
+            Notification::create([
+                'user_id' => $nextInLine->user_id,
+                'type' => 'spot_available',
+                'message' => 'Une place de parking est maintenant disponible pour vous ! Une réservation a été créée automatiquement.',
+                'data' => [
+                    'parking_spot_id' => $reservation->parking_spot_id,
+                    'parking_spot_number' => $reservation->parkingSpot->number
+                ]
+            ]);
+
             $nextInLine->remove();
 
             // Créer une nouvelle réservation pour la personne suivante
             Reservation::create([
                 'user_id' => $nextInLine->user_id,
-                'parking_spot_id' => $reservation->parking_spot_id,
+                'parking_spot_id' => $nextInLine->parking_spot_id ?? $reservation->parking_spot_id,
                 'starts_at' => now(),
                 'ends_at' => now()->addHours(24),
                 'status' => 'active'
             ]);
+
+            // Notifier les autres utilisateurs de la liste d'attente de leur nouvelle position
+            $updatedWaitingList = WaitingList::where('status', 'waiting')
+                ->orderBy('position')
+                ->get();
+
+            foreach ($updatedWaitingList as $entry) {
+                Notification::create([
+                    'user_id' => $entry->user_id,
+                    'type' => 'position_updated',
+                    'message' => "Votre position dans la liste d'attente a été mise à jour. Vous êtes maintenant en position {$entry->position}.",
+                    'data' => [
+                        'old_position' => $entry->position + 1,
+                        'new_position' => $entry->position
+                    ]
+                ]);
+            }
         }
 
         return back()->with('status', 'Réservation terminée avec succès.');

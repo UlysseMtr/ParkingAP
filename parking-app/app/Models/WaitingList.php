@@ -14,6 +14,7 @@ class WaitingList extends Model
 
     protected $fillable = [
         'user_id',
+        'parking_spot_id',
         'position',
         'requested_at',
         'status',
@@ -26,6 +27,11 @@ class WaitingList extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function parkingSpot()
+    {
+        return $this->belongsTo(ParkingSpot::class);
     }
 
     public function isWaiting()
