@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Mes réservations')
+@section('title', 'Gestion des réservations')
 
 @section('content')
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Mes réservations</h2>
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Gestion des réservations</h2>
 
                 @if($reservations->isEmpty())
                 <div class="text-center py-12">
@@ -15,19 +15,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 class="mt-2 text-sm font-semibold text-gray-900">Aucune réservation</h3>
-                    <p class="mt-1 text-sm text-gray-500">Vous n'avez pas encore effectué de réservation.</p>
-                    <div class="mt-6">
-                        <a href="{{ route('parking-spots.index') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                            Réserver une place
-                        </a>
-                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Il n'y a actuellement aucune réservation dans le système.</p>
                 </div>
                 @else
                 <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
                     <table class="min-w-full divide-y divide-gray-300">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Place</th>
+                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Utilisateur</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Place</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Début</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fin</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Statut</th>
@@ -40,6 +36,9 @@
                             @foreach($reservations as $reservation)
                             <tr>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                    {{ $reservation->user->name }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                     Place n°{{ $reservation->parkingSpot->number }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
@@ -74,6 +73,8 @@
         </div>
     </div>
 </div>
+
+<!-- Modales de confirmation pour chaque réservation active -->
 @foreach($reservations as $reservation)
 @if($reservation->status === 'active')
 <div id="modal-{{ $reservation->id }}" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -93,7 +94,7 @@
                     </h3>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            Êtes-vous sûr de vouloir terminer cette réservation pour la place n°{{ $reservation->parkingSpot->number }} ? Cette action est irréversible. Soyez sûr d'avoir laissé la place vide avant de terminer la réservation.
+                            Êtes-vous sûr de vouloir terminer cette réservation pour l'utilisateur <strong>{{ $reservation->user->name }}</strong> (place n°{{ $reservation->parkingSpot->number }}) ? Cette action est irréversible.
                         </p>
                     </div>
                 </div>

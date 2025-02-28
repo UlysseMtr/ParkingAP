@@ -59,6 +59,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
         Route::post('/users/{user}/reset-password', [AdminController::class, 'resetUserPassword'])->name('users.reset-password');
 
+        // Gestion des réservations
+        Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations.index');
+
         // Gestion des places de parking
         Route::post('/parking-spots', [ParkingSpotController::class, 'store'])->name('parking-spots.store');
         Route::put('/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'update'])->name('parking-spots.update');

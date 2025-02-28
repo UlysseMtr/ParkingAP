@@ -8,6 +8,7 @@ use App\Models\Reservation;
 use App\Models\WaitingList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -43,9 +44,19 @@ class AdminController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
+    public function reservations()
+    {
+        $reservations = Reservation::with(['user', 'parkingSpot'])
+            ->orderByRaw("CASE WHEN status = 'active' THEN 0 WHEN status = 'closed' THEN 1 ELSE 2 END")
+            ->orderBy('ends_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.reservations', compact('reservations'));
+    }
+
     public function createUser(Request $request)
     {
-        \Log::info('Tentative de création d\'utilisateur', $request->all());
+        Log::info('Tentative de création d\'utilisateur', $request->all());
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -54,7 +65,7 @@ class AdminController extends Controller
             'role' => ['required', 'in:user,admin'],
         ]);
 
-        \Log::info('Données validées', $validated);
+        Log::info('Données validées', $validated);
 
         try {
             $user = User::create([
@@ -65,10 +76,10 @@ class AdminController extends Controller
                 'is_active' => true,
             ]);
 
-            \Log::info('Utilisateur créé avec succès', ['user_id' => $user->id]);
+            Log::info('Utilisateur créé avec succès', ['user_id' => $user->id]);
             return back()->with('status', 'Utilisateur créé avec succès.');
         } catch (\Exception $e) {
-            \Log::error('Erreur lors de la création de l\'utilisateur', [
+            Log::error('Erreur lors de la création de l\'utilisateur', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

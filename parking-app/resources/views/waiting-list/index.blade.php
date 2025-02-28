@@ -60,12 +60,9 @@
                                 </td>
                                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                     @if($entry->user_id === auth()->id())
-                                    <form method="POST" action="{{ route('waiting-list.cancel') }}" class="inline-block" onsubmit="return confirm('Êtes-vous sûr de vouloir quitter la liste d\'attente ?');">
-                                        @csrf
-                                        <button type="submit" class="text-red-600 hover:text-red-900">
-                                            Quitter la liste
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="openCancelModal()" class="text-red-600 hover:text-red-900">
+                                        Quitter la liste
+                                    </button>
                                     @endif
                                 </td>
                             </tr>
@@ -141,4 +138,51 @@
         </div>
     </div>
 </div>
+
+<!-- Modal pour quitter la liste d'attente -->
+<div id="cancelWaitingListModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto z-50">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold leading-6 text-gray-900">
+                        Quitter la liste d'attente
+                    </h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            Êtes-vous sûr de vouloir quitter la liste d'attente ? Vous perdrez votre position actuelle.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <form method="POST" action="{{ route('waiting-list.cancel') }}" class="sm:col-start-2">
+                    @csrf
+                    <button type="submit" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                        Confirmer
+                    </button>
+                </form>
+                <button type="button" onclick="closeCancelModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openCancelModal() {
+        document.getElementById('cancelWaitingListModal').classList.remove('hidden');
+    }
+
+    function closeCancelModal() {
+        document.getElementById('cancelWaitingListModal').classList.add('hidden');
+    }
+</script>
 @endsection

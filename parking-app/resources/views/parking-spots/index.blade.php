@@ -67,7 +67,7 @@
                 </svg>
             </button>
         </div>
-        <form method="POST" action="{{ url('/admin/parking-spots') }}" onsubmit="event.preventDefault(); if(confirm('Voulez-vous créer cette place de parking ?')) this.submit();">
+        <form method="POST" action="{{ url('/admin/parking-spots') }}" id="createSpotForm">
             @csrf
             <div class="mb-4">
                 <label for="number" class="block text-sm font-medium text-gray-700">Numéro de place</label>
@@ -78,14 +78,48 @@
                 <textarea name="description" id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
             </div>
             <div class="mt-6 flex justify-end space-x-3">
-                <button type="button" onclick="document.getElementById('createSpotModal').classList.add('hidden')" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <button type="button" onclick="document.getElementById('createSpotModal').classList.add('hidden')" class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     Annuler
                 </button>
-                <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                <button type="button" onclick="openConfirmCreateModal()" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     Créer
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour la création d'une place de parking -->
+<div id="confirmCreateSpotModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto z-50">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold leading-6 text-gray-900">
+                        Confirmer la création
+                    </h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            Voulez-vous créer cette place de parking ? Cette action ajoutera une nouvelle place disponible dans le système.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <button type="button" onclick="submitCreateSpotForm()" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">
+                    Confirmer
+                </button>
+                <button type="button" onclick="closeConfirmCreateModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0">
+                    Annuler
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -136,6 +170,18 @@
 
     function closeReservationModal() {
         document.getElementById('reservationModal').classList.add('hidden');
+    }
+
+    function openConfirmCreateModal() {
+        document.getElementById('confirmCreateSpotModal').classList.remove('hidden');
+    }
+
+    function closeConfirmCreateModal() {
+        document.getElementById('confirmCreateSpotModal').classList.add('hidden');
+    }
+
+    function submitCreateSpotForm() {
+        document.getElementById('createSpotForm').submit();
     }
 </script>
 @endsection
