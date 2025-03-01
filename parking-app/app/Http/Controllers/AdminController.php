@@ -20,11 +20,43 @@ class AdminController extends Controller
 
     public function dashboard()
     {
+        // Statistiques de base
+        $totalSpots = ParkingSpot::count();
+        $activeSpots = ParkingSpot::where('is_active', true)->count();
+        $occupiedSpots = Reservation::where('status', 'active')->count();
+        $waitingUsers = WaitingList::where('status', 'waiting')->count();
+        $totalUsers = User::count();
+
         $stats = [
-            'total_spots' => ParkingSpot::count(),
-            'active_spots' => ParkingSpot::where('is_active', true)->count(),
-            'occupied_spots' => Reservation::where('status', 'active')->count(),
-            'waiting_users' => WaitingList::where('status', 'waiting')->count(),
+            'total_spots' => $totalSpots,
+            'active_spots' => $activeSpots,
+            'occupied_spots' => $occupiedSpots,
+            'waiting_users' => $waitingUsers,
+            'total_users' => $totalUsers,
+        ];
+
+        // Calcul des pourcentages pour les graphiques
+        $percentages = [
+            'occupation' => $totalSpots > 0 ? round(($occupiedSpots / $totalSpots) * 100) : 0,
+            'disponibilite' => $totalSpots > 0 ? round((($activeSpots - $occupiedSpots) / $totalSpots) * 100) : 0,
+            'inactives' => $totalSpots > 0 ? round((($totalSpots - $activeSpots) / $totalSpots) * 100) : 0,
+        ];
+
+        // Données pour le graphique d'évolution des réservations sur les 7 derniers jours
+        $lastWeekReservations = [];
+        $lastWeekLabels = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $count = Reservation::whereDate('created_at', $date)->count();
+            $lastWeekReservations[] = $count;
+            $lastWeekLabels[] = now()->subDays($i)->format('d/m');
+        }
+
+        // Données pour le graphique de répartition des statuts des réservations
+        $reservationStatuses = [
+            'active' => Reservation::where('status', 'active')->count(),
+            'closed' => Reservation::where('status', 'closed')->count(),
         ];
 
         $latestReservations = Reservation::with(['user', 'parkingSpot'])
@@ -32,7 +64,14 @@ class AdminController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'latestReservations'));
+        return view('admin.dashboard', compact(
+            'stats',
+            'latestReservations',
+            'percentages',
+            'lastWeekReservations',
+            'lastWeekLabels',
+            'reservationStatuses'
+        ));
     }
 
     public function users()
@@ -44,14 +83,40 @@ class AdminController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
-    public function reservations()
+    public function reservations(Request $request)
     {
-        $reservations = Reservation::with(['user', 'parkingSpot'])
+        $status = $request->input('status', 'all');
+        $search = $request->input('search');
+
+        // Compteurs pour les onglets
+        $activeCount = Reservation::where('status', 'active')->count();
+        $closedCount = Reservation::where('status', 'closed')->count();
+        $totalCount = $activeCount + $closedCount;
+
+        $query = Reservation::with(['user', 'parkingSpot']);
+
+        if ($status === 'active') {
+            $query->where('status', 'active');
+        } elseif ($status === 'closed') {
+            $query->where('status', 'closed');
+        }
+
+        // Recherche par nom d'utilisateur ou numéro de place
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            })->orWhereHas('parkingSpot', function ($q) use ($search) {
+                $q->where('number', 'like', "%{$search}%");
+            });
+        }
+
+        $reservations = $query
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 WHEN status = 'closed' THEN 1 ELSE 2 END")
             ->orderBy('ends_at', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->appends(['status' => $status, 'search' => $search]);
 
-        return view('admin.reservations', compact('reservations'));
+        return view('admin.reservations', compact('reservations', 'status', 'activeCount', 'closedCount', 'totalCount', 'search'));
     }
 
     public function createUser(Request $request)

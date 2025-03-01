@@ -36,7 +36,6 @@ class ParkingSpotController extends Controller
         $validated = $request->validate([
             'number' => ['required', 'string', 'unique:parking_spots,number,' . $parkingSpot->id],
             'description' => ['nullable', 'string'],
-            'is_active' => ['boolean'],
         ]);
 
         $parkingSpot->update($validated);
@@ -47,7 +46,7 @@ class ParkingSpotController extends Controller
     {
         abort_if(!Auth::user()->isAdmin(), 403);
 
-        if ($parkingSpot->currentReservation()) {
+        if ($parkingSpot->currentReservation) {
             return back()->with('error', 'Impossible de supprimer une place actuellement réservée.');
         }
 

@@ -7,7 +7,70 @@
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6">
-                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Gestion des réservations</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-900">Gestion des réservations</h2>
+
+                    <div class="flex space-x-2">
+                        <span class="inline-flex rounded-md shadow-sm">
+                            <a href="{{ route('admin.reservations.index', ['status' => 'all']) }}" class="px-4 py-2 text-sm font-medium rounded-md {{ $status === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50' }}">
+                                Toutes
+                                <span class="ml-1 px-2 py-0.5 text-xs rounded-full {{ $status === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700' }}">{{ $totalCount }}</span>
+                            </a>
+                        </span>
+                        <span class="inline-flex rounded-md shadow-sm">
+                            <a href="{{ route('admin.reservations.index', ['status' => 'active']) }}" class="px-4 py-2 text-sm font-medium rounded-md {{ $status === 'active' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50' }}">
+                                Actives
+                                <span class="ml-1 px-2 py-0.5 text-xs rounded-full {{ $status === 'active' ? 'bg-indigo-500 text-white' : 'bg-green-100 text-green-800' }}">{{ $activeCount }}</span>
+                            </a>
+                        </span>
+                        <span class="inline-flex rounded-md shadow-sm">
+                            <a href="{{ route('admin.reservations.index', ['status' => 'closed']) }}" class="px-4 py-2 text-sm font-medium rounded-md {{ $status === 'closed' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50' }}">
+                                Terminées
+                                <span class="ml-1 px-2 py-0.5 text-xs rounded-full {{ $status === 'closed' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700' }}">{{ $closedCount }}</span>
+                            </a>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <form action="{{ route('admin.reservations.index') }}" method="GET" class="flex items-center">
+                        <input type="hidden" name="status" value="{{ $status }}">
+                        <div class="relative flex-grow">
+                            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par nom ou n° de place..." class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            @if($search)
+                            <a href="{{ route('admin.reservations.index', ['status' => $status]) }}" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            @endif
+                        </div>
+                        <button type="submit" class="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                            <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                            Rechercher
+                        </button>
+                    </form>
+                </div>
+
+                @if($search)
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                Résultats de recherche pour "<strong>{{ $search }}</strong>"
+                                <a href="{{ route('admin.reservations.index', ['status' => $status]) }}" class="font-medium underline text-blue-700 hover:text-blue-600">Effacer la recherche</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 @if($reservations->isEmpty())
                 <div class="text-center py-12">
@@ -15,7 +78,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 class="mt-2 text-sm font-semibold text-gray-900">Aucune réservation</h3>
-                    <p class="mt-1 text-sm text-gray-500">Il n'y a actuellement aucune réservation dans le système.</p>
+                    <p class="mt-1 text-sm text-gray-500">
+                        @if($status === 'active')
+                        Il n'y a actuellement aucune réservation active.
+                        @elseif($status === 'closed')
+                        Il n'y a actuellement aucune réservation terminée.
+                        @else
+                        Il n'y a actuellement aucune réservation dans le système.
+                        @endif
+                    </p>
                 </div>
                 @else
                 <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
@@ -39,7 +110,7 @@
                                     {{ $reservation->user->name }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                    Place n°{{ $reservation->parkingSpot->number }}
+                                    Place n°{{ $reservation->parkingSpot->number ?? 'Supprimée' }}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                     {{ $reservation->starts_at->format('d/m/Y H:i') }}
@@ -94,7 +165,7 @@
                     </h3>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            Êtes-vous sûr de vouloir terminer cette réservation pour l'utilisateur <strong>{{ $reservation->user->name }}</strong> (place n°{{ $reservation->parkingSpot->number }}) ? Cette action est irréversible.
+                            Êtes-vous sûr de vouloir terminer cette réservation pour l'utilisateur <strong>{{ $reservation->user->name }}</strong> (place n°{{ $reservation->parkingSpot->number ?? 'Supprimée' }}) ? Cette action est irréversible.
                         </p>
                     </div>
                 </div>

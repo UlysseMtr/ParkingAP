@@ -10,6 +10,7 @@ use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +30,16 @@ class ReservationController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $reservations = $user->reservations()->latest()->paginate(10);
-        return view('reservations.index', compact('reservations'));
+
+        // Statistiques pour les réservations
+        $stats = [
+            'total_reservations' => $user->reservations()->count(),
+            'active_reservations' => $user->reservations()->where('status', 'active')->count(),
+            'completed_reservations' => $user->reservations()->where('status', 'closed')->count(),
+            'current_spot' => $user->reservations()->where('status', 'active')->first()?->parkingSpot,
+        ];
+
+        return view('reservations.index', compact('reservations', 'stats'));
     }
 
     /**
@@ -62,7 +72,7 @@ class ReservationController extends Controller
             return back()->with('error', 'Cette place n\'est plus disponible.');
         }
 
-        // Créer la réservation
+        // Crée la réservation
         $reservation = Reservation::create([
             'user_id' => $user->id,
             'parking_spot_id' => $parkingSpot->id,
@@ -89,7 +99,25 @@ class ReservationController extends Controller
             abort(403);
         }
 
+        // Vérifie si un admin termine la réservation d'un utilisateur ?
+        $isAdminClosingForUser = $user->isAdmin() && $reservation->user_id !== $user->id;
+
         $reservation->close();
+
+        // Si il le fait --> envoyer une notification à l'utilisateur
+        if ($isAdminClosingForUser) {
+            Notification::create([
+                'user_id' => $reservation->user_id,
+                'type' => 'reservation_closed_by_admin',
+                'message' => 'Un administrateur a terminé votre réservation pour la place n°' . ($reservation->parkingSpot->number ?? 'Supprimée') . '.',
+                'data' => [
+                    'parking_spot_id' => $reservation->parking_spot_id,
+                    'parking_spot_number' => $reservation->parkingSpot ? $reservation->parkingSpot->number : 'Supprimée',
+                    'admin_id' => $user->id,
+                    'admin_name' => $user->name
+                ]
+            ]);
+        }
 
         // Vérifier la liste d'attente pour cette place spécifique
         $nextInLine = WaitingList::where('status', 'waiting')
@@ -97,7 +125,7 @@ class ReservationController extends Controller
             ->orderBy('position')
             ->first();
 
-        // Si personne n'attend cette place spécifique, chercher la première personne en attente
+        // Si personne n'attend cette place spécifique chercher la première personne en attente
         if (!$nextInLine) {
             $nextInLine = WaitingList::where('status', 'waiting')
                 ->orderBy('position')
@@ -112,7 +140,7 @@ class ReservationController extends Controller
                 'message' => 'Une place de parking est maintenant disponible pour vous ! Une réservation a été créée automatiquement.',
                 'data' => [
                     'parking_spot_id' => $reservation->parking_spot_id,
-                    'parking_spot_number' => $reservation->parkingSpot->number
+                    'parking_spot_number' => $reservation->parkingSpot ? $reservation->parkingSpot->number : 'Supprimée'
                 ]
             ]);
 

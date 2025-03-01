@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\WaitingList;
 use App\Models\ParkingSpot;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Routing\Controller as BaseController;
+use Carbon\Carbon;
 
 class WaitingListController extends BaseController
 {
@@ -28,14 +31,140 @@ class WaitingListController extends BaseController
      */
     public function index(): View
     {
+        // Récupérer la liste d'attente
         $waitingList = WaitingList::with(['user', 'parkingSpot'])
             ->where('status', 'waiting')
             ->orderBy('position')
             ->get();
 
+        // Récupérer les places de parking
         $parkingSpots = ParkingSpot::where('is_active', true)->get();
 
-        return view('waiting-list.index', compact('waitingList', 'parkingSpots'));
+        // Statistiques pour la liste d'attente
+        $stats = [
+            'total_waiting' => $waitingList->count(),
+            'avg_wait_time' => $this->calculateAverageWaitTime(),
+            'most_requested_spot' => $this->getMostRequestedSpot(),
+            'your_position' => Auth::user()->waitingList()->where('status', 'waiting')->value('position'),
+            'estimated_wait' => $this->estimateWaitTime(Auth::user()->waitingList()->where('status', 'waiting')->value('position')),
+        ];
+
+        // Données pour le graphique de distribution des demandes par place
+        $spotDistribution = WaitingList::where('status', 'waiting')
+            ->select('parking_spot_id', DB::raw('count(*) as count'))
+            ->groupBy('parking_spot_id')
+            ->get()
+            ->map(function ($item) {
+                $spot = ParkingSpot::find($item->parking_spot_id);
+                return [
+                    'spot_number' => $spot ? $spot->number : 'Inconnu',
+                    'count' => $item->count
+                ];
+            });
+
+        // Tendance des demandes sur les 7 derniers jours
+        $lastWeekRequests = [];
+        $lastWeekLabels = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i)->format('Y-m-d');
+            $count = WaitingList::whereDate('requested_at', $date)->count();
+            $lastWeekRequests[] = $count;
+            $lastWeekLabels[] = Carbon::now()->subDays($i)->format('d/m');
+        }
+
+        return view('waiting-list.index', compact(
+            'waitingList',
+            'parkingSpots',
+            'stats',
+            'spotDistribution',
+            'lastWeekRequests',
+            'lastWeekLabels'
+        ));
+    }
+
+    /**
+     * Calcule le temps d'attente moyen en jours
+     * 
+     * @return float
+     */
+    private function calculateAverageWaitTime(): float
+    {
+        $completedWaits = WaitingList::where('status', 'removed')
+            ->whereNotNull('updated_at')
+            ->whereNotNull('requested_at')
+            ->get();
+
+        if ($completedWaits->isEmpty()) {
+            return 0;
+        }
+
+        $totalWaitHours = 0;
+        foreach ($completedWaits as $wait) {
+            $totalWaitHours += $wait->updated_at->diffInHours($wait->requested_at);
+        }
+
+        return round($totalWaitHours / (24 * $completedWaits->count()), 1);
+    }
+
+    /**
+     * Récupère la place la plus demandée
+     * 
+     * @return array|null
+     */
+    private function getMostRequestedSpot(): ?array
+    {
+        $mostRequested = WaitingList::select('parking_spot_id', DB::raw('count(*) as count'))
+            ->groupBy('parking_spot_id')
+            ->orderByDesc('count')
+            ->first();
+
+        if (!$mostRequested) {
+            return null;
+        }
+
+        $spot = ParkingSpot::find($mostRequested->parking_spot_id);
+        return [
+            'spot_number' => $spot ? $spot->number : 'Inconnu',
+            'count' => $mostRequested->count
+        ];
+    }
+
+    /**
+     * Estime le temps d'attente en fonction de la position
+     * 
+     * @param int|null $position
+     * @return string|null
+     */
+    private function estimateWaitTime(?int $position): ?string
+    {
+        if (!$position) {
+            return null;
+        }
+
+        // Calculer le taux de rotation moyen des places (réservations terminées par jour)
+        $lastMonth = Carbon::now()->subMonth();
+        $completedReservationsCount = Reservation::where('status', 'closed')
+            ->where('updated_at', '>=', $lastMonth)
+            ->count();
+
+        $daysInMonth = 30;
+        $avgCompletionsPerDay = $completedReservationsCount / $daysInMonth;
+
+        if ($avgCompletionsPerDay <= 0) {
+            return "Indéterminé";
+        }
+
+        // Estimer le nombre de jours d'attente
+        $estimatedDays = ceil($position / $avgCompletionsPerDay);
+
+        if ($estimatedDays < 1) {
+            return "Moins d'un jour";
+        } elseif ($estimatedDays == 1) {
+            return "Environ 1 jour";
+        } else {
+            return "Environ $estimatedDays jours";
+        }
     }
 
     /**

@@ -36,7 +36,7 @@
                 <div class="mt-2 relative">
                     <input id="password" name="password" type="password" autocomplete="current-password" required
                         class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 @error('password') ring-red-500 @enderror">
-                    <button type="button" onclick="togglePassword('password')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button type="button" onclick="togglePassword('password', event)" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                         <svg id="eye-password" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -69,7 +69,10 @@
 </div>
 
 <script>
-    function togglePassword(inputId) {
+    function togglePassword(inputId, event) {
+        // Empêcher le comportement par défaut du bouton
+        event.preventDefault();
+
         const input = document.getElementById(inputId);
         const eyeIcon = document.getElementById('eye-' + inputId);
         const eyeSlashIcon = document.getElementById('eye-slash-' + inputId);
