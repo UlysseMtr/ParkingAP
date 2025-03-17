@@ -151,11 +151,7 @@
                             </div>
                         </div>
                         <div class="flex-shrink-0">
-                            @if($spot->is_active && !$spot->currentReservation && !auth()->user()->hasActiveReservation() && !auth()->user()->isInWaitingList())
-                            <button type="button" onclick="openReservationModal('{{ $spot->id }}', '{{ $spot->number }}')" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                Réserver
-                            </button>
-                            @elseif(auth()->user()->isAdmin())
+                            @if(auth()->user()->isAdmin())
                             <div class="flex space-x-2">
                                 <button type="button" onclick="openEditSpotModal('{{ $spot->id }}', '{{ $spot->number }}', '{{ $spot->description }}')" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                                     <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,7 +159,17 @@
                                     </svg>
                                     Modifier
                                 </button>
+                                <button type="button" onclick="openDeleteSpotModal('{{ $spot->id }}', '{{ $spot->number }}')" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50">
+                                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Supprimer
+                                </button>
                             </div>
+                            @elseif($spot->is_active && !$spot->currentReservation && !auth()->user()->hasActiveReservation() && !auth()->user()->isInWaitingList())
+                            <button type="button" onclick="openReservationModal('{{ $spot->id }}', '{{ $spot->number }}')" class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                Réserver
+                            </button>
                             @endif
                         </div>
                     </div>
@@ -495,50 +501,40 @@
 </div>
 
 <!-- Modal pour supprimer une place -->
-<div id="deleteSpotModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto z-50">
-    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div class="relative transform overflow-hidden rounded-xl bg-white shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
-            <div class="bg-red-50 px-6 py-6">
-                <div class="text-center">
-                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4">
-                        <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold leading-6 text-gray-900">
-                        Confirmer la suppression
-                    </h3>
-                    <div class="mt-3">
-                        <p class="text-sm text-gray-600">
-                            Voulez-vous vraiment supprimer la place n°<span id="delete_spot_number" class="font-medium"></span> ? Cette action est irréversible.
-                        </p>
-                    </div>
+<div id="deleteSpotModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-0 border w-full max-w-md shadow-xl rounded-xl bg-white transform transition-all">
+        <div class="bg-red-600 rounded-t-xl px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                    <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Supprimer une place de parking
+                </h3>
+                <button type="button" onclick="closeDeleteSpotModal()" class="text-white hover:text-gray-200">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-700 mb-6">Êtes-vous sûr de vouloir supprimer la place n°<span id="deleteSpotNumber" class="font-semibold"></span> ? Cette action est irréversible.</p>
+            <p class="text-gray-700 mb-6 text-sm bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                <span class="font-semibold text-yellow-700">Note :</span> Vous ne pouvez pas supprimer une place actuellement réservée.
+            </p>
+            <form id="deleteSpotForm" method="POST" action="">
+                @csrf
+                @method('DELETE')
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeDeleteSpotModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                        Supprimer
+                    </button>
                 </div>
-            </div>
-
-            <div class="bg-white px-6 py-6">
-                <form id="deleteSpotForm" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <div class="flex flex-col sm:flex-row-reverse gap-3">
-                        <button type="submit"
-                            class="flex-1 justify-center rounded-md bg-red-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors flex items-center">
-                            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Supprimer
-                        </button>
-                        <button type="button"
-                            onclick="closeDeleteSpotModal()"
-                            class="flex-1 justify-center rounded-md bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors flex items-center">
-                            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -594,11 +590,9 @@
         }, 100);
     }
 
-    function openDeleteSpotModal(id, number) {
-        const form = document.getElementById('deleteSpotForm');
-        form.action = `/admin/parking-spots/${id}`;
-
-        document.getElementById('delete_spot_number').textContent = number;
+    function openDeleteSpotModal(spotId, spotNumber) {
+        document.getElementById('deleteSpotNumber').textContent = spotNumber;
+        document.getElementById('deleteSpotForm').action = `/admin/parking-spots/${spotId}`;
         document.getElementById('deleteSpotModal').classList.remove('hidden');
     }
 
