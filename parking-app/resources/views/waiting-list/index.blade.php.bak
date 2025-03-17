@@ -5,6 +5,145 @@
 @section('content')
 <div class="py-12">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- Section des statistiques - visible uniquement pour les administrateurs -->
+        @if(auth()->user()->isAdmin())
+        <div class="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Total des personnes en attente -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Personnes en attente</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ $stats['total_waiting'] }}</dd>
+                <div class="mt-2">
+                    <span class="text-sm text-gray-500">
+                        @if($stats['total_waiting'] > 0)
+                        <span class="text-yellow-600">
+                            <svg class="inline-block h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            Temps d'attente estimé
+                        </span>
+                        @else
+                        <span class="text-green-600">
+                            <svg class="inline-block h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            Aucune attente
+                        </span>
+                        @endif
+                    </span>
+                </div>
+            </div>
+
+            <!-- Temps d'attente moyen -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Temps d'attente moyen</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+                    {{ $stats['avg_wait_time'] }}
+                    <span class="text-lg">jours</span>
+                </dd>
+                <div class="mt-2">
+                    <span class="text-sm text-gray-500">
+                        Basé sur les données historiques
+                    </span>
+                </div>
+            </div>
+
+            <!-- Place la plus demandée -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Place la plus demandée</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+                    @if($stats['most_requested_spot'])
+                    N°{{ $stats['most_requested_spot']['spot_number'] }}
+                    @else
+                    -
+                    @endif
+                </dd>
+                <div class="mt-2">
+                    <span class="text-sm text-gray-500">
+                        @if($stats['most_requested_spot'])
+                        {{ $stats['most_requested_spot']['count'] }} demandes
+                        @else
+                        Aucune donnée disponible
+                        @endif
+                    </span>
+                </div>
+            </div>
+
+            <!-- Votre position -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Votre position</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+                    @if($stats['your_position'])
+                    {{ $stats['your_position'] }}
+                    @else
+                    -
+                    @endif
+                </dd>
+                <div class="mt-2">
+                    <span class="text-sm text-gray-500">
+                        @if($stats['estimated_wait'])
+                        Attente estimée: {{ $stats['estimated_wait'] }}
+                        @elseif($stats['your_position'])
+                        En attente d'une place
+                        @else
+                        Vous n'êtes pas en liste d'attente
+                        @endif
+                    </span>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Graphiques et visualisations - visible uniquement pour les administrateurs -->
+        @if(auth()->user()->isAdmin() && $stats['total_waiting'] > 0)
+        <div class="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <!-- Distribution des demandes par place -->
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Distribution des demandes par place</h3>
+                    <div class="mt-4">
+                        @foreach($spotDistribution as $item)
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-700">Place N°{{ $item['spot_number'] }}</span>
+                                </div>
+                                <span class="text-sm font-medium text-gray-700">{{ $item['count'] }}</span>
+                            </div>
+                            @php
+                            $width = min(100, ($item['count'] / $stats['total_waiting']) * 100);
+                            @endphp
+                            <div class="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-indigo-600 h-2.5 rounded-full" style="width: {{ $width }}%"></div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tendance des demandes sur les 7 derniers jours -->
+            <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Tendance des demandes (7 derniers jours)</h3>
+                    <div class="mt-4 h-64 flex items-end space-x-2">
+                        @foreach($lastWeekRequests as $index => $count)
+                        @php
+                        $height = $count > 0 ? (min(100, ($count / max($lastWeekRequests)) * 100)) : 0;
+                        @endphp
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-indigo-100 rounded-t-md" style="height: {{ $height }}%">
+                                <div class="bg-indigo-600 w-full h-full rounded-t-md"></div>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">{{ $lastWeekLabels[$index] }}</div>
+                            <div class="text-xs font-medium">{{ $count }}</div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Liste d'attente principale -->
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6">
@@ -91,13 +230,11 @@
                                                 <p class="text-sm font-medium text-gray-900 truncate">
                                                     {{ $entry->user->name }}
                                                 </p>
+                                                <p class="text-sm text-gray-500 truncate">
+                                                    Place n°{{ $entry->parkingSpot->number ?? 'Indéterminée' }}
+                                                </p>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        <p class="text-sm text-gray-500 truncate">
-                                            Place n°{{ $entry->parkingSpot->number ?? 'Indéterminée' }}
-                                        </p>
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                         {{ $entry->requested_at->format('d/m/Y H:i') }}
